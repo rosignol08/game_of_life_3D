@@ -56,7 +56,7 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target);
 
 #include <ctime>
 
-#define GRID_SIZE 50
+#define GRID_SIZE 30
 #define CELL_SIZE 1.0f
 
 struct Cell {
@@ -65,6 +65,7 @@ struct Cell {
 };
 
 void InitializeGrid(Cell grid[GRID_SIZE][GRID_SIZE][GRID_SIZE]) {
+    srand(time(0)); // Initialize random seed with current time
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int y = 0; y < GRID_SIZE; y++) {
             for (int z = 0; z < GRID_SIZE; z++) {
@@ -121,7 +122,8 @@ void Dessine_grille(Cell grid[GRID_SIZE][GRID_SIZE][GRID_SIZE]) {
         for (int y = 0; y < GRID_SIZE; y++) {
             for (int z = 0; z < GRID_SIZE; z++) {
                 if (grid[x][y][z].alive) {
-                    DrawCube((Vector3){ x * CELL_SIZE, y * CELL_SIZE, z * CELL_SIZE }, CELL_SIZE-0.1f, CELL_SIZE-0.1f, CELL_SIZE-0.1f, WHITE);
+                    DrawCube((Vector3){ (x - GRID_SIZE / 2) * CELL_SIZE, (y - GRID_SIZE / 2) * CELL_SIZE, (z - GRID_SIZE / 2) * CELL_SIZE }, CELL_SIZE, CELL_SIZE, CELL_SIZE, WHITE);
+                    DrawCubeWires((Vector3){ (x - GRID_SIZE / 2) * CELL_SIZE, (y - GRID_SIZE / 2) * CELL_SIZE, (z - GRID_SIZE / 2) * CELL_SIZE }, CELL_SIZE, CELL_SIZE, CELL_SIZE, BLACK);
                 }
             }
         }
@@ -145,7 +147,7 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Game of Life 3D");
 
     Camera3D cam = (Camera3D){ 0 };
-    cam.position = (Vector3){ 10.0f, 10.0f, 10.0f };
+    cam.position = (Vector3){ 20.0f, 20.0f, 20.0f };
     cam.target = Vector3Zero();
     cam.projection = CAMERA_PERSPECTIVE;
     cam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
@@ -222,7 +224,17 @@ int main(void)
         lightDir = Vector3Normalize(lightDir);
         lightCam.position = Vector3Scale(lightDir, -15.0f);
         //SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
-        Update_grille(grille);
+        static float updateTime = 0.0f;
+        static float timeAccumulator = 0.0f;
+        const float desiredUpdateTime = 0.5f; // Adjust this value to control the simulation speed
+
+        updateTime = GetFrameTime();
+        timeAccumulator += updateTime;
+
+        if (timeAccumulator >= desiredUpdateTime) {
+            Update_grille(grille);
+            timeAccumulator = 0.0f;
+        }
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
@@ -262,6 +274,7 @@ int main(void)
         EndMode3D();
 
         DrawText("Game of Life 3D", 100, 10, 20, BLACK);
+        DrawText("utiliser z q s d pour se deplacer", screenWidth - MeasureText("utiliser z q s d pour se deplacer", 30) - 10, 30, 30, DARKGRAY);
         DrawFPS(10, 10);
         EndDrawing();
 
